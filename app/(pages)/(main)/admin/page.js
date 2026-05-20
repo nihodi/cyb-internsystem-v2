@@ -64,7 +64,7 @@ function AdminPage({ props }) {
       .then(data => {
         const newLogs = data.workLogs.map((e) => {
           const user = e.LoggedByUser;
-          const name = user ? `${user.firstName} ${user.lastName}` : null;
+          const name = user?.name;
           return {
             ...e,
             loggedBy: name,
