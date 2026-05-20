@@ -14,11 +14,26 @@ export const auth = betterAuth({
     plugins: [
         magicLink({
             sendMagicLink: async ({email, token, url, metadata}, ctx) => {
-                const html = `Hello. You have successfully created an account at ${process.env.BETTER_AUTH_URL}.
+
+                const existingUser = await prisma.user.findFirst({
+                    where: {
+                        email
+                    }
+                });
+
+                const isNewUser = !existingUser;
+
+                const html = isNewUser ?
+                    `Hello. You have successfully created an account at ${process.env.BETTER_AUTH_URL}.
   
-                  Please verify your email by clicking the following link: <a href="${url}">${url}</a> <br>
-                  If you have not created a user, ignore this message. <br>
-                  You cannot reply to this email.`;
+                    Please verify your email by clicking the following link: <a href="${url}">${url}</a> <br>
+                    If you have not created a user, ignore this email. <br>
+                    You cannot reply to this email.`
+                    :
+                    `Hello. A sign-in request to your account has been made.
+                    Click the following link to sign in: <a href="${url}">${url}</a> <br>
+                    If you did not request this sign-in, ignore this email. <br>
+                    You cannot reply to this email.`;
 
                 transporter.sendMail(
                     mailOptions(email, html)
