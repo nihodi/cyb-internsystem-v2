@@ -43,6 +43,9 @@ export default function SignInPage() {
         const normalizedEmail = normalizeEmail(email);
         const response = await authClient.signIn.magicLink({
             email: normalizedEmail,
+            metadata: {
+                action: "signInExistingUser"
+            }
         });
 
         if (!response.error) {
@@ -52,9 +55,9 @@ export default function SignInPage() {
             setLoading(false);
             setSnackbarOpen(true);
         } else {
-            setError(true);
+            let errorMessage = `${response.error.message}`
+            setResponse(errorMessage)
             setSeverity("error")
-            setResponse(response.error);
             setLoading(false);
             setSnackbarOpen(true);
         }

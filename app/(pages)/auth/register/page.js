@@ -18,7 +18,7 @@ export default function registerPage() {
   const [email, setEmail] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [showLoginButton, setShowLoginButton] = useState(false);
 
   const handleRegister = async () => {
     setSnackbarOpen(false)
@@ -35,15 +35,19 @@ export default function registerPage() {
     const responseCU = await createUser(name, email);
 
     if (responseCU.error) {
-      setResponse(responseCU.error)
+      let errorMessage = `${responseCU.error.message}`
+      setResponse(errorMessage)
       setSeverity("error")
       setSnackbarOpen(true)
       setLoading(false);
+
+      // show login button if a user already exists
+      setShowLoginButton(responseCU.error.code === "AUTH_SIGNUP_USER_EXISTS")
       return;
     } else {
       setResponse(`User created. Email sent to ${email}`);
       setSeverity("success")
-      setSuccess(true);
+      setShowLoginButton(true);
       setSnackbarOpen(true)
       setLoading(false);
       return;
@@ -110,7 +114,7 @@ export default function registerPage() {
           )}
           </Button>
           </Grid>
-          {success ? 
+          {showLoginButton ?
             <Grid item>
             <Link href="/auth/signIn">
               <Button
@@ -140,7 +144,7 @@ export default function registerPage() {
             {response != "" ? (
               <SnackbarAlert 
               open={snackbarOpen} 
-              setOpen={setSnackbarOpen} 
+              setOpen={setSnackbarOpen}
               response={response}
               severity={severity}
               />
@@ -163,7 +167,9 @@ export default function registerPage() {
 async function createUser(name, email) {
   const res =  await authClient.signIn.magicLink({
       email: normalizeEmail(email),
-      name
+      name,
+      metadata: {action: "registerNewUser"}
   });
+  console.log(res);
   return res;
 }

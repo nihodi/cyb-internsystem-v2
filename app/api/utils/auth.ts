@@ -1,4 +1,5 @@
-import {betterAuth} from "better-auth";
+import {betterAuth, BetterAuthError} from "better-auth";
+import {createAuthMiddleware, APIError} from "better-auth/api";
 import prisma from "@/prisma/prismaClient";
 import {prismaAdapter} from "@better-auth/prisma-adapter";
 import {customSession, magicLink} from "better-auth/plugins";
@@ -22,6 +23,13 @@ export const auth = betterAuth({
                 });
 
                 const isNewUser = !existingUser;
+
+                // error out if user is trying to sign in without a user
+                if (isNewUser && metadata.action === "signInExistingUser")
+                    throw new APIError("NOT_FOUND", {message: "User not found. Please sign up first.", code: "AUTH_SIGNIN_USER_NOT_FOUND"});
+                // error out if user is trying to register an account with an e-mail that is already tied to another account
+                else if (!isNewUser && metadata.action === "registerNewUser")
+                    throw new APIError("CONFLICT", {message: "You are trying to sign up a user with an e-mail that already has a user attached to it. Please log in instead.", code: "AUTH_SIGNUP_USER_EXISTS"});
 
                 const html = isNewUser ?
                     `Hello. You have successfully created an account at ${process.env.BETTER_AUTH_URL}.
