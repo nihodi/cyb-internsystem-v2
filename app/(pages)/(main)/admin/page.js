@@ -53,13 +53,7 @@ function AdminPage({ props }) {
     fetch("/api/v2/users")
     .then(res => res.json())
     .then((data) => {
-      const users = data.users.map((e) => {
-        return {
-          ...e,
-          name: `${e.firstName} ${e.lastName ? e.lastName : ""}`,
-        };
-      })
-      setUsers(users)
+      setUsers(data.users)
     })
   }, []);
   
@@ -70,7 +64,7 @@ function AdminPage({ props }) {
       .then(data => {
         const newLogs = data.workLogs.map((e) => {
           const user = e.LoggedByUser;
-          const name = user ? `${user.firstName} ${user.lastName}` : null;
+          const name = user?.name;
           return {
             ...e,
             loggedBy: name,
@@ -102,7 +96,7 @@ function AdminPage({ props }) {
       })
       
     }
-  }  
+  }
 
   return (
     <Box>

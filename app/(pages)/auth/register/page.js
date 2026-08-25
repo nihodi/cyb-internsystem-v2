@@ -8,20 +8,18 @@ import { normalizeEmail } from "@/app/components/Login/authUtil";
 import Link from "next/link";
 import { useState } from "react";
 import SnackbarAlert from "@/app/components/feedback/snackbarAlert";
+import {authClient} from "@/app/api/utils/auth-client.ts";
 
 export default function registerPage() {
   
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [name, setName] = useState("");
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [severity, setSeverity] = useState("")
   const [email, setEmail] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  
-  const debug = true;
-  
+  const [showLoginButton, setShowLoginButton] = useState(false);
+
   const handleRegister = async () => {
     setSnackbarOpen(false)
 
@@ -34,18 +32,22 @@ export default function registerPage() {
 
     setLoading(true);
       
-    const responseCU = await createUser(firstName, lastName, email, debug);
+    const responseCU = await createUser(name, email);
 
-    if (!responseCU.ok) {
-      setResponse(responseCU.error)
+    if (responseCU.error) {
+      let errorMessage = `${responseCU.error.message}`
+      setResponse(errorMessage)
       setSeverity("error")
       setSnackbarOpen(true)
       setLoading(false);
+
+      // show login button if a user already exists
+      setShowLoginButton(responseCU.error.code === "AUTH_SIGNUP_USER_EXISTS")
       return;
     } else {
       setResponse(`User created. Email sent to ${email}`);
       setSeverity("success")
-      setSuccess(true);
+      setShowLoginButton(true);
       setSnackbarOpen(true)
       setLoading(false);
       return;
@@ -87,8 +89,7 @@ export default function registerPage() {
           <Typography variant="h6">Register new user</Typography>
         </Grid>
 
-        {CheckedTextField("First name", firstName, setFirstName)}
-        {CheckedTextField("Last name", lastName, setLastName)}
+        {CheckedTextField("Name", name, setName)}
         {CheckedTextField("Email", email, setEmail, "email")}
 
         <Grid item>
@@ -113,7 +114,7 @@ export default function registerPage() {
           )}
           </Button>
           </Grid>
-          {success ? 
+          {showLoginButton ?
             <Grid item>
             <Link href="/auth/signIn">
               <Button
@@ -143,7 +144,7 @@ export default function registerPage() {
             {response != "" ? (
               <SnackbarAlert 
               open={snackbarOpen} 
-              setOpen={setSnackbarOpen} 
+              setOpen={setSnackbarOpen}
               response={response}
               severity={severity}
               />
@@ -162,33 +163,13 @@ export default function registerPage() {
   
 }
 
-// 
-async function createUser(firstName, lastName, email, debug) {
-  
-  const normalizedEmail = normalizeEmail(email);
-  
-  const response = await fetch("/api/v2/users", {
-    method: "post",
-    mode: "cors",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      firstName: firstName,
-      lastName: lastName,
-      email: normalizedEmail,
-    }),
-  });
 
-  const responseBody = await response.json();
-  
-  if (debug) console.log("createUser response:", response);
-  
-  if (!response.ok) {
-    return { ok: false, error: responseBody.error };
-  }
-  
-  if (debug) console.log("createUser:", responseBody);
-  
-  return { ok: true };
+async function createUser(name, email) {
+  const res =  await authClient.signIn.magicLink({
+      email: normalizeEmail(email),
+      name,
+      metadata: {action: "registerNewUser"}
+  });
+  console.log(res);
+  return res;
 }
